@@ -8,8 +8,7 @@ import numpy as np
 from scipy.stats import chi2_contingency
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix as sk_confusion_matrix
 from sklearn.model_selection import GridSearchCV
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
@@ -20,6 +19,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 import plotly.graph_objects as go
+import plotly.figure_factory as ff
 
 
 st.set_page_config(
@@ -149,14 +149,24 @@ st.markdown("""
             """, unsafe_allow_html=True)
 
 st.markdown("""
-##### The original dataset presented above was preliminarily used to train a simple [Decision Tree](https://en.wikipedia.org/wiki/Decision_tree), and since the accuracy for that model was always 100%, I have decided to eliminate several features in order to make the predictions more challenging.
-""")
+##### The original dataset presented above was preliminarily used to train a simple <a style='color: #FF855C' href="https://en.wikipedia.org/wiki/Decision_tree">Decision Tree</a>, and since the accuracy for that model was always 100%, I have decided to eliminate several features in order to make the predictions more challenging.
+""", unsafe_allow_html=True)
+
+
+
+
+
 
 df = df.drop(columns=['odor', 'spore-print-color', 'ring-type', 'gill-color', 'stalk-surface-above-ring', 'stalk-surface-below-ring', 'bruises', 'gill-size', 'stalk-color-above-ring', 'stalk-color-below-ring', 'population', 'veil-color', 'cap-surface', 'gill-spacing'])
 most_frequent_value = df['stalk-root'].mode()[0]
 df_mushrooms = df.fillna({'stalk-root': most_frequent_value}) # Alternative C: Fill missing values with the mode of 'stalk-root'
 df_mushrooms['poisonous'] = df_mushrooms['poisonous'].map({'e': 0, 'p': 1})
 df_mushrooms.drop(columns=['veil-type'], inplace=True)
+
+
+
+
+
 
 st.markdown("""
 The features that have been removed from the dataset were:
@@ -247,6 +257,10 @@ st.markdown("""
 """)
 
 
+
+
+
+ 
 # Function to calculate Cramér's V
 def cramers_v(confusion_matrix):
     chi2 = chi2_contingency(confusion_matrix)[0]
@@ -288,7 +302,94 @@ fig.update_layout(
     width=1000
 )
 
+
+
+
+
+
 # Display the Plotly chart in Streamlit
 st.plotly_chart(fig)
 
-st.markdown("""<h5>This Matrix is very useful for identifying Correlations or problems with <a style='color: #FF855C' href="https://en.wikipedia.org/wiki/Multicollinearity">Multicolilinearity</a></h5>""", unsafe_allow_html=True)
+st.markdown("""<h5>This Matrix is very useful for identifying Correlations or problems with <a style='color: #FF855C' href="https://en.wikipedia.org/wiki/Multicollinearity">Multicollinearity</a></h5>""", unsafe_allow_html=True)
+st.markdown("---")
+st.markdown("""
+<h3 style="color:#FF855C;">Modelling</h3>
+            """, unsafe_allow_html=True)
+st.markdown('''##### For the modelling, we will be approaching the problem by implementing the simplest models first and then we will progressively move into more complex approaches. For this first case, we will be implementing a <a style='color: #FF855C' href="https://en.wikipedia.org/wiki/Decision_tree">Decision Tree</a>.''' , unsafe_allow_html=True)
+st.markdown('''##### ''')
+
+
+######################################################### code
+# Your provided code
+df_dummies = pd.get_dummies(df_mushrooms.drop('poisonous', axis=1))
+X = df_dummies
+y = df_mushrooms['poisonous']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=99)
+clf = DecisionTreeClassifier(random_state=89)
+clf.fit(X_train, y_train)
+y_pred = clf.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+report = classification_report(y_test, y_pred)
+conf_matrix = sk_confusion_matrix(y_test, y_pred)
+########################################################## code
+
+
+
+st.write("""
+##### Model Description
+In this analysis, a simple classification tree was employed to train the mushroom dataset. 
+The goal was to predict whether a mushroom is poisonous or edible based on its various features. 
+A decision tree is a powerful machine learning algorithm that works well for classification tasks. 
+
+##### Model Training
+The `DecisionTreeClassifier` from the `scikit-learn` library was used for this purpose. The model was trained 
+using the default settings, which means no hyperparameter tuning was performed. The decision tree was 
+constructed using a subset of the dataset, with 70% of the data used for training and 30% reserved for testing.
+
+<h3 style="color:#FF855C;">Evaluation</h3>
+After training the model, its performance was evaluated on the test set. The resulting confusion matrix and accuracy score are displayed below. The confusion matrix provides a clear visual 
+representation of the model's performance, showing the counts of true positives, true negatives, false positives, 
+and false negatives.
+""", unsafe_allow_html=True)
+
+
+
+
+# Plotting the confusion matrix with Plotly
+z = conf_matrix
+x = ['Predicted: Edible', 'Predicted: Poisonous']
+y = ['Actual: Edible', 'Actual: Poisonous']
+
+# Creating annotations for the heatmap
+z_text = [[str(y) for y in x] for x in z]
+
+fig = ff.create_annotated_heatmap(z, x=x, y=y, annotation_text=z_text, colorscale='Blues', showscale=True)
+
+# Adding title and labels
+fig.update_layout(
+                  xaxis_title='Predicted Label',
+                  yaxis_title='True Label',
+                  title_x=0.5)  # Center the title
+
+# Adjusting layout to make the plot square
+fig.update_layout(
+    width=900,
+    height=600,
+    margin=dict(l=50, r=50, t=150, b=50)
+)
+
+# Center the plot in Streamlit
+col1, col2, col3 = st.columns([1, 2, 1])
+
+with col2:
+    st.plotly_chart(fig)
+
+# Display accuracy in the middle with a larger font
+st.markdown(
+    f"""
+    <div style="text-align:center; font-size:24px; font-weight:bold;">
+        Accuracy: {accuracy:.2%}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
