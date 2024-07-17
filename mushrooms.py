@@ -39,7 +39,7 @@ description = """
 <h5>"This data set includes descriptions of hypothetical samples corresponding to 23 species of gilled mushrooms in the <a href="https://en.wikipedia.org/wiki/Agaricus" style="color:#FF855C;">Agaricus</a> and <a href="https://en.wikipedia.org/wiki/Lepiota" style="color:#FF855C;">Lepiota</a> Family (pp. 500-525). Each species is identified as definitely edible or definitely poisonous, or of unknown edibility and not recommended. This latter class was combined with the poisonous one. The Guide clearly states that there is no simple rule for determining the edibility of a mushroom; no rule like ``leaflets three, let it be'' for Poisonous Oak and Ivy."</h5>
 <h5>In general, the terms used in the Dataset are very straightforward, with no in-depth knowledge required in order to understand them individually as they are directly related to physical characteristics of the mushrooms. I have previously changed the naming of the categories under each feature for better understanding.</h5>
 <h5>The main goal of this project is to perform an in-depth analysis of the problem in order to facilitate the development of a model that can most optimally predict whether a mushroom is poisonous or edible, based on the several features presented.</h5>
-<h5>It is important to highlight that the project was developed following <a href="https://en.wikipedia.org/wiki/Cross_Industry_Standard_Process_for_Data_Mining" style="color:#FF855C;">crisp-DM</a> (Cross Industry Standard Process for Data Mining) methodology.</h5>
+<h5>It is important to highlight that the project was developed following <a href="https://en.wikipedia.org/wiki/Cross_Industry_Standard_Process_for_Data_Mining" style="color:#FF855C;">crisp-DM</a> (Cross Industry Standard Process for Data Mining) methodology, and it follows iteration cycles that span over Business Understanding, Data Understanding, Data Preparation, Modelling and Evaluation, with emphasis on experimenting with a handful of ML models in order to see possible improvements in accuracy. </h5>
 """
 st.markdown('<a name="top"></a>', unsafe_allow_html=True)
 # Custom CSS for styling
@@ -388,8 +388,104 @@ with col2:
 st.markdown(
     f"""
     <div style="text-align:center; font-size:24px; font-weight:bold;">
-        Accuracy: {accuracy:.2%}
+        Accuracy: {accuracy:.6%}
     </div>
     """,
     unsafe_allow_html=True
 )
+
+st.write("<br><br>", unsafe_allow_html=True)
+
+st.write("""
+##### Although we got a pretty decent accuracy score for a simple decision tree, we still need to improve it due to the impact that a misleading prediction could cause for this specific case. Since the Business and Data Understanding phases, it is crucial for us to evaluate the impact of potential misleading predictions in our final model. Some domains such as Healthcare, Finances or even problems like ours cannot afford many mistakes in predictions.
+""", unsafe_allow_html=True)
+
+
+st.markdown("---")
+
+st.write("""
+<h3 style="color:#FF855C;">Modelling</h3>
+After training the model in a simple classification tree, it is time for us to take a step further and experiment with higher complexity
+models. Here, we are leveraging the data preprocessing done in the previous steps in order to create a <a href="https://www.ibm.com/topics/random-forest#:~:text=Random%20forest%20is%20a%20commonly,Decision%20trees" style="color:#FF855C;">Random Forest</a> model.
+""", unsafe_allow_html=True)
+
+st.write("<br><br>", unsafe_allow_html=True)
+
+st.write("""
+##### Model Training
+The `RandomForestClassifier` from the `scikit-learn` library was used for this purpose. Random Forest is an ensemble learning method that constructs multiple decision trees during training and outputs the mode of the classes for classification tasks. The model was trained on 70% of the dataset and tested on the remaining 30%.
+
+""", unsafe_allow_html=True)
+
+st.write("""
+<h3 style="color:#FF855C;">Evaluation</h3>
+After training the model, its performance was evaluated on the test set. The resulting confusion matrix and accuracy score are displayed below. The confusion matrix provides a clear visual 
+representation of the model's performance, showing the counts of true positives, true negatives, false positives, 
+and false negatives.
+""", unsafe_allow_html=True)
+
+
+
+
+
+################################################################################# CODE
+from sklearn.ensemble import RandomForestClassifier
+X = df_dummies
+y = df['poisonous']
+rf_clf = RandomForestClassifier(random_state=99)
+rf_clf.fit(X_train, y_train)
+y_pred_rf = rf_clf.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred_rf)
+report = classification_report(y_test, y_pred_rf)
+conf_matrix = sk_confusion_matrix(y_test, y_pred_rf)
+################################################################################# CODE
+
+
+
+
+# Plotting the confusion matrix with Plotly
+z = conf_matrix
+x = ['Predicted: Edible', 'Predicted: Poisonous']
+y = ['Actual: Edible', 'Actual: Poisonous']
+
+# Creating annotations for the heatmap
+z_text = [[str(y) for y in x] for x in z]
+
+fig = ff.create_annotated_heatmap(z, x=x, y=y, annotation_text=z_text, colorscale='Blues', showscale=True)
+
+# Adding title and labels
+fig.update_layout(
+                  xaxis_title='Predicted Label',
+                  yaxis_title='True Label',
+                  title_x=0.5)  # Center the title
+
+# Adjusting layout to make the plot square
+fig.update_layout(
+    width=900,
+    height=600,
+    margin=dict(l=50, r=50, t=150, b=50)
+)
+
+# Center the plot in Streamlit
+col1, col2, col3 = st.columns([1, 2, 1])
+
+with col2:
+    st.plotly_chart(fig)
+
+# Display accuracy in the middle with a larger font
+st.markdown(
+    f"""
+    <div style="text-align:center; font-size:24px; font-weight:bold;">
+        Accuracy: {accuracy:.6%}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.write("<br><br>", unsafe_allow_html=True)
+
+st.write("""
+##### Since we did not observe any change for the accuracy metric using the Random Forest model, we can try a last method in order to train models based on trees: Gridsearch and Cross-Validation in order to tune our hyperparameters.
+""", unsafe_allow_html=True)
+
+
