@@ -488,4 +488,94 @@ st.write("""
 ##### Since we did not observe any change for the accuracy metric using the Random Forest model, we can try a last method in order to train models based on trees: Gridsearch and Cross-Validation in order to tune our hyperparameters.
 """, unsafe_allow_html=True)
 
+st.markdown("---")
 
+st.write("""
+<h3 style="color:#FF855C;">Modelling</h3>
+Grid search is a method to find the optimal hyperparameters for a model by exhaustively searching through a specified parameter grid. Cross-validation is a technique to assess the model's performance by dividing the dataset into training and validation sets multiple times. These techniques help improve model accuracy by ensuring the chosen parameters generalize well to unseen data. Here we are using GridSearchCV from Scikit-Learn to perform these techniques.
+Additionally, we are also running a cross a k-fold cross-validation algorithm, that basically experiments with different train/test splits and then, using an aggregation function, finds an optimal value for the split. Below is an image that explains how K-fold works.
+""", unsafe_allow_html=True)
+
+st.write("<br><br>", unsafe_allow_html=True)
+
+st.write("""
+<img src="https://user-images.githubusercontent.com/26833433/258589390-8d815058-ece8-48b9-a94e-0e1ab53ea0f6.png" style="height:400px; display: block; margin: auto;">
+
+ """, unsafe_allow_html=True)
+
+
+st.write("<br><br>", unsafe_allow_html=True)
+#################################################################################
+@st.cache_data
+def perform_grid_search(X_train, y_train):
+    rf_clf2 = RandomForestClassifier()
+    params_grid = {
+        'max_depth': [12],
+        'min_samples_leaf': [1],
+        'n_estimators': list(range(0, 300, 10))
+    }
+    grid_rf = GridSearchCV(estimator=rf_clf2,
+                           param_grid=params_grid,
+                           scoring='accuracy',
+                           cv=5)
+    grid_rf.fit(X_train, y_train)
+    return grid_rf
+grid_rf = perform_grid_search(X_train, y_train)
+results = grid_rf.cv_results_
+mean_test_scores = results['mean_test_score']
+n_estimators = list(range(0, 300, 10))
+######################################################################################
+
+st.write("""
+
+Down below you are able to see a plot showing the accuracy of a Random Forest model as a function of the number of estimators. Each point represents the mean test accuracy obtained using cross-validation for a specific number of estimators, ranging from 0 to 300 in increments of 10. This plot helps to identify the optimal number of estimators for the highest accuracy, and it is possible to notice that, no matter the complexity that we imply to our model, it keeps its performance stable over time, therefore we can conclude that, using these algorithms, we are probably not going to see any improvements with the accuracy metric.
+""", unsafe_allow_html=True)
+
+
+
+# Create the plot
+fig = go.Figure()
+
+# Add the line
+fig.add_trace(go.Scatter(
+    x=n_estimators, 
+    y=mean_test_scores, 
+    mode='lines+markers',
+    name='Test Accuracy',
+    marker=dict(symbol='circle')
+))
+
+# Update layout
+fig.update_layout(
+    title='Random Forest Accuracy vs. Number of Estimators',
+    xaxis_title='Number of Estimators',
+    yaxis_title='Accuracy',
+    legend_title='Legend',
+    width=800,
+    height=400,
+    template='plotly_white'
+)
+
+# Add grid
+fig.update_xaxes(showgrid=True)
+fig.update_yaxes(showgrid=True)
+
+# Center the plot using st.columns
+col1, col2, col3 = st.columns([1, 2, 1])
+
+with col1:
+    st.write("")  # Empty column for spacing
+
+with col2:
+    st.plotly_chart(fig)  # Centered column with the plot
+
+with col3:
+    st.write("")  # Empty column for spacing
+
+
+st.write("<br><br>", unsafe_allow_html=True)
+
+
+st.write("""
+#### We have tried several techniques, from simple clf trees to more advanced logistic regression with l2 regularization (Notebook) and cross-validation. Even with all these advanced techniques, a simple classification tree presented the best "score/effort" relationship, but we had to try other models in order to reach that conclusion.
+""", unsafe_allow_html=True)
