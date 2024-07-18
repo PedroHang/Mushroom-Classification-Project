@@ -1,6 +1,11 @@
 # Mushroom Classification Project
 
 
+
+https://github.com/user-attachments/assets/a6d19687-81a1-49fb-85ed-c62e3400aede
+
+
+
 Welcome to the Mushroom Classification Project! This guide will help you set up the project environment and install all the necessary dependencies. For the best experience, we recommend using Anaconda Navigator.
 
 **Notes:**
