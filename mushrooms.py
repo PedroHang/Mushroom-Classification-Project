@@ -13,7 +13,6 @@ from sklearn.model_selection import GridSearchCV
 import statsmodels.formula.api as smf
 import statsmodels.api as sm
 from statsmodels.stats.outliers_influence import variance_inflation_factor
-from patsy import dmatrices, dmatrix
 import plotly.express as px
 from sklearn.metrics import accuracy_score
 from sklearn.linear_model import LogisticRegression
@@ -132,10 +131,13 @@ st.sidebar.markdown("<a href='#cramers-v-matrix' style='color:#FF855C; text-deco
 bucket_name = 'dataset-content-pedrohang'
 object_key = 'mushrooms/mushrooms.csv'
 
-s3_uri = f's3://{bucket_name}/{object_key}'
-df = pd.read_csv(s3_uri, storage_options={'anon': True})
+@st.cache_data
+def load_data_from_s3(bucket_name, object_key):
+    s3_uri = f's3://{bucket_name}/{object_key}'
+    df = pd.read_csv(s3_uri, storage_options={'anon': True})
+    return df
 
-
+df = load_data_from_s3(bucket_name, object_key)
 
 
 st.markdown("---")
@@ -200,6 +202,7 @@ st.dataframe(df_mushrooms, use_container_width=True)
 
 
 # Function to get distinct categories for each categorical variable
+@st.cache_data
 def get_distinct_categories(df):
     categories = {}
     for column in df.select_dtypes(include=['object', 'category']).columns:
@@ -262,6 +265,8 @@ st.markdown("""
 
  
 # Function to calculate Cramér's V
+
+@st.cache_data
 def cramers_v(confusion_matrix):
     chi2 = chi2_contingency(confusion_matrix)[0]
     n = confusion_matrix.sum().sum()
@@ -320,7 +325,6 @@ st.markdown('''##### ''')
 
 
 ######################################################### code
-# Your provided code
 df_dummies = pd.get_dummies(df_mushrooms.drop('poisonous', axis=1))
 X = df_dummies
 y = df_mushrooms['poisonous']
@@ -430,18 +434,25 @@ and false negatives.
 
 ################################################################################# CODE
 from sklearn.ensemble import RandomForestClassifier
-X = df_dummies
-y = df['poisonous']
-rf_clf = RandomForestClassifier(random_state=99)
-rf_clf.fit(X_train, y_train)
-y_pred_rf = rf_clf.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred_rf)
-report = classification_report(y_test, y_pred_rf)
-conf_matrix = sk_confusion_matrix(y_test, y_pred_rf)
+
+@st.cache_data
+def random_forest_classifier(df, target_column, test_size=0.3, random_state_split=99, random_state_clf=99):
+    df_dummies = pd.get_dummies(df.drop(target_column, axis=1))
+    X = df_dummies
+    y = df[target_column]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state_split)
+    rf_clf = RandomForestClassifier(random_state=random_state_clf)
+    rf_clf.fit(X_train, y_train)
+    y_pred_rf = rf_clf.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred_rf)
+    report = classification_report(y_test, y_pred_rf)
+    conf_matrix = sk_confusion_matrix(y_test, y_pred_rf)
+    
+    return accuracy, report, conf_matrix
 ################################################################################# CODE
 
 
-
+accuracy, report, conf_matrix = random_forest_classifier(df_mushrooms, 'poisonous')
 
 # Plotting the confusion matrix with Plotly
 z = conf_matrix
