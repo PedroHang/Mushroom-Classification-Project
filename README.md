@@ -4,7 +4,8 @@
 
 https://github.com/user-attachments/assets/a6d19687-81a1-49fb-85ed-c62e3400aede
 
-
+### **[URL to the project (LIVE): https://mushroom-classification-project-1.onrender.com/](https://mushroom-classification-project-1.onrender.com/)**
+* Note: The web page may take up to 60 seconds to load if it is Inactive (12h without any access)
 
 Welcome to the Mushroom Classification Project! This guide will help you set up the project environment and install all the necessary dependencies. For the best experience, we recommend using Anaconda Navigator.
 
